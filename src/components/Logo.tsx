@@ -3,16 +3,20 @@ import { RefreshCw } from 'lucide-react';
 
 export const Logo = ({ className = "" }: { className?: string }) => {
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="relative group">
-        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-12 transition-transform duration-300">
-          <RefreshCw className="w-6 h-6 text-white" />
+    <div className={`flex items-center gap-2 md:gap-2.5 ${className} group`}>
+      <div className="relative">
+        <div className="w-8 h-8 md:w-9 md:h-9 bg-[#1D1D1F] rounded-lg md:rounded-xl flex items-center justify-center apple-shadow group-hover:bg-[#0071E3] transition-all duration-500">
+          <RefreshCw className="w-4 h-4 md:w-5 md:h-5 text-white" />
         </div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 border-2 border-white rounded-full"></div>
       </div>
-      <span className="text-2xl font-black tracking-tighter text-slate-800 uppercase">
-        Revive <span className="text-blue-600">IT</span>
-      </span>
+      <div className="flex flex-col leading-none">
+        <span className="text-[15px] md:text-[17px] font-bold text-[#1D1D1F] tracking-tight">
+          Revive<span className="text-[#0071E3]">IT</span>
+        </span>
+        <span className="text-[8px] md:text-[10px] font-bold text-black/30 uppercase tracking-[0.2em] mt-0.5 md:mt-1">
+          Precision
+        </span>
+      </div>
     </div>
   );
 };

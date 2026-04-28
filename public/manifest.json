@@ -1,0 +1,16 @@
+{
+  "name": "Revive-IT Tech Repairs",
+  "short_name": "Revive-IT",
+  "description": "Expert tech repairs for MacBook, PC, and data recovery.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0071E3",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
