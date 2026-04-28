@@ -175,7 +175,7 @@ const Navbar = ({ onFavoritesClick }: { onFavoritesClick: () => void }) => {
             ))}
             
             <a
-              href="https://panel.revive-it.uk"
+              href="https://customerpanel.revive-it.uk"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-3.5 rounded-2xl text-black/40 hover:bg-[#F5F5F7] transition-all font-bold text-sm tracking-tight group"
@@ -655,7 +655,7 @@ const TrackingInfo = () => {
 
             <div className="mt-12 md:mt-16">
               <a 
-                href="https://panel.revive-it.uk" 
+                href="https://customerpanel.revive-it.uk" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-full sm:w-auto gap-2 bg-[#1D1D1F] text-white font-bold px-8 py-4 rounded-full hover:bg-[#0071E3] transition-all apple-shadow uppercase tracking-widest text-[10px] md:text-[11px]"
@@ -752,14 +752,34 @@ const Contact = ({ setShowConfirmation }: { setShowConfirmation: (val: boolean) 
     e.preventDefault();
     if (formData.type === 'booking' && (!formData.bookingDate || !formData.bookingTime)) return;
     setStatus('loading');
-    setTimeout(() => {
-      setSubmittedData({ ...formData });
-      setStatus('success');
-      if (formData.type === 'booking') setShowConfirmation(true);
-      setFormData({ 
-        firstName: '', lastName: '', email: '', description: '', type: 'inquiry', bookingDate: '', bookingTime: '' 
+
+    const formElement = e.target as HTMLFormElement;
+    const data = new FormData(formElement);
+
+    // Ensure state-only fields are included if they aren't in the form as inputs
+    // In our case, bookingDate and bookingTime are buttons, so we should add them manually if they exist
+    if (formData.bookingDate) data.set('bookingDate', formData.bookingDate);
+    if (formData.bookingTime) data.set('bookingTime', formData.bookingTime);
+    if (formData.description) data.set('description', formData.description);
+    if (formData.type) data.set('type', formData.type);
+
+    fetch("/", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(data as any).toString()
+    })
+      .then(() => {
+        setSubmittedData({ ...formData });
+        setStatus('success');
+        if (formData.type === 'booking') setShowConfirmation(true);
+        setFormData({ 
+          firstName: '', lastName: '', email: '', description: '', type: 'inquiry', bookingDate: '', bookingTime: '' 
+        });
+      })
+      .catch(error => {
+        console.error(error);
+        setStatus('error');
       });
-    }, 800);
   };
 
   const getWhatsAppLink = (data = formData) => {
@@ -873,7 +893,13 @@ const Contact = ({ setShowConfirmation }: { setShowConfirmation: (val: boolean) 
                 </button>
               </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form 
+                onSubmit={handleSubmit} 
+                className="space-y-8"
+                name="contact"
+                data-netlify="true"
+              >
+                <input type="hidden" name="form-name" value="contact" />
                 <div className="bg-[#F5F5F7] p-1.5 rounded-2xl flex gap-1.5 border border-black/5">
                   <button type="button" onClick={() => setFormData(prev => ({ ...prev, type: 'inquiry' }))} className={cn("flex-1 py-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'inquiry' ? "bg-white shadow-sm text-[#0071E3]" : "text-black/30 hover:text-black/60")}>Inquiry</button>
                   <button type="button" onClick={() => setFormData(prev => ({ ...prev, type: 'booking' }))} className={cn("flex-1 py-3 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all", formData.type === 'booking' ? "bg-white shadow-sm text-[#0071E3]" : "text-black/30 hover:text-black/60")}>Booking</button>
