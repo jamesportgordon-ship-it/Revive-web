@@ -175,7 +175,7 @@ const Navbar = ({ onFavoritesClick }: { onFavoritesClick: () => void }) => {
             ))}
             
             <a
-              href="https://revive-it.link"
+              href="https://panel.revive-it.uk"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-3.5 rounded-2xl text-black/40 hover:bg-[#F5F5F7] transition-all font-bold text-sm tracking-tight group"
@@ -655,7 +655,7 @@ const TrackingInfo = () => {
 
             <div className="mt-12 md:mt-16">
               <a 
-                href="https://revive-it.link" 
+                href="https://panel.revive-it.uk" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-full sm:w-auto gap-2 bg-[#1D1D1F] text-white font-bold px-8 py-4 rounded-full hover:bg-[#0071E3] transition-all apple-shadow uppercase tracking-widest text-[10px] md:text-[11px]"
