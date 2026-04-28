@@ -4,7 +4,6 @@ import {
   Wrench, 
   ShieldAlert, 
   Database, 
-  Cpu, 
   Phone, 
   Mail, 
   MapPin, 
@@ -35,242 +34,7 @@ import {
 import { format, addDays, startOfToday, isSameDay } from 'date-fns';
 import { Link } from 'react-scroll';
 import { cn } from './lib/utils';
-import { GoogleGenAI, Type } from "@google/genai";
-
 import { Logo } from './components/Logo';
-
-// --- Neural Diagnostic Engine ---
-let aiInstance: any = null;
-
-const getAI = () => {
-  if (aiInstance) return aiInstance;
-  
-  const apiKey = typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined;
-  
-  if (!apiKey) {
-    console.warn("GEMINI_API_KEY not found. AI diagnostics will be unavailable.");
-    return null;
-  }
-  
-  aiInstance = new GoogleGenAI({ apiKey });
-  return aiInstance;
-};
-
-const AIDiagnostics = () => {
-  const [symptoms, setSymptoms] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<null | {
-    fault: string;
-    complexity: number;
-    time: string;
-    cost: string;
-    advice: string;
-  }>(null);
-
-  const analyzeSymptoms = async () => {
-    if (!symptoms.trim()) return;
-    const ai = getAI();
-    if (!ai) {
-      alert("AI diagnostics service is currently unavailable. Please contact us directly.");
-      return;
-    }
-
-    setIsAnalyzing(true);
-    setResult(null);
-
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Analyze these tech hardware symptoms: "${symptoms}". Provide a likely diagnosis for a repair shop.`,
-        config: {
-          systemInstruction: "You are an expert tech diagnostics engine for 'Revive-IT'. Your goal is to provide a professional, concise, and accurate diagnostic assessment. Return the result in a JSON format with exactly these keys: 'fault' (string), 'complexity' (integer 1-10), 'time' (string), 'cost' (string range in GBP e.g. '£80 - £120'), 'advice' (string). Be realistic and professional.",
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              fault: { type: Type.STRING },
-              complexity: { type: Type.INTEGER },
-              time: { type: Type.STRING },
-              cost: { type: Type.STRING },
-              advice: { type: Type.STRING },
-            },
-            required: ['fault', 'complexity', 'time', 'cost', 'advice']
-          }
-        }
-      });
-
-      const data = JSON.parse(response.text || '{}');
-      setResult(data);
-    } catch (error) {
-      console.error("AI Diagnostic Error:", error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  return (
-    <section id="ai-lab" className="py-20 md:py-32 bg-white relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #0071E3 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="relative z-10"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-[#0071E3] text-[10px] font-black rounded-full mb-8 uppercase tracking-widest border border-blue-100">
-              <Cpu className="w-3 h-3 animate-pulse" />
-              Neural Diagnostic Lab
-            </div>
-            <h2 className="text-3xl md:text-5xl font-bold text-[#1D1D1F] mb-8 tracking-tight">
-              Instant AI <br /><span className="text-[#0071E3]">Expert Triage.</span>
-            </h2>
-            <p className="text-base md:text-lg text-black/50 mb-10 leading-relaxed font-medium">
-              Describe your device’s symptoms in plain English. Our neural engine will cross-reference thousands of repair patterns to provide an instant expert assessment.
-            </p>
-            
-            <div className="apple-card p-1.5 md:p-2 bg-[#F5F5F7] border border-black/5 flex items-center gap-2 group focus-within:ring-2 focus-within:ring-[#0071E3]/20 transition-all">
-              <input 
-                value={symptoms}
-                onChange={(e) => setSymptoms(e.target.value)}
-                placeholder="Ex: My MacBook screen flickers..."
-                className="flex-1 bg-transparent border-none outline-none px-4 md:px-6 py-4 font-medium text-[#1D1D1F] placeholder:text-black/20 text-sm md:text-base"
-                onKeyDown={(e) => e.key === 'Enter' && analyzeSymptoms()}
-              />
-              <button 
-                onClick={analyzeSymptoms}
-                disabled={isAnalyzing || !symptoms.trim()}
-                className="bg-[#0071E3] text-white p-3 md:p-4 rounded-xl md:rounded-2xl hover:bg-[#0077ED] transition-all disabled:opacity-50 disabled:grayscale"
-              >
-                {isAnalyzing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              </button>
-            </div>
-            
-            <div className="mt-8 flex items-center gap-4 text-[10px] font-bold text-black/30 uppercase tracking-[0.2em]">
-              <div className="flex -space-x-2">
-                {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-white bg-blue-50 flex items-center justify-center"><Cpu className="w-3 h-3 text-[#0071E3]" /></div>)}
-              </div>
-              Powered by Gemini 3.1 Advanced
-            </div>
-          </motion.div>
-
-          <div className="relative">
-            <AnimatePresence mode="wait">
-              {isAnalyzing ? (
-                <motion.div
-                  key="analyzing"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.1 }}
-                  className="apple-card p-8 md:p-12 bg-[#F5F5F7] text-center space-y-8 relative overflow-hidden h-[400px] md:h-[500px] flex flex-col items-center justify-center"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent opacity-50" />
-                  <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                    className="w-20 h-20 md:w-24 md:h-24 border-t-2 border-r-2 border-[#0071E3] rounded-full flex items-center justify-center p-3"
-                  >
-                    <div className="w-full h-full bg-blue-500/10 rounded-full flex items-center justify-center">
-                       <Cpu className="w-6 h-6 md:w-8 md:h-8 text-[#0071E3]" />
-                    </div>
-                  </motion.div>
-                  <div>
-                    <h3 className="text-xl font-bold text-[#1D1D1F] mb-2 tracking-tight">Processing Sequence...</h3>
-                    <p className="text-black/40 text-sm font-medium">Analyzing diagnostic patterns</p>
-                  </div>
-                  <div className="w-32 md:w-48 h-1 bg-black/[0.05] rounded-full overflow-hidden mx-auto relative">
-                    <motion.div 
-                      initial={{ x: "-100%" }}
-                      animate={{ x: "100%" }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                      className="absolute inset-0 bg-[#0071E3] w-1/2"
-                    />
-                  </div>
-                </motion.div>
-              ) : result ? (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="apple-card p-6 md:p-10 bg-white border border-[#0071E3]/20 shadow-[0_0_80px_rgba(0,113,227,0.1)] space-y-6 md:space-y-8 relative overlow-hidden"
-                >
-                  <div className="absolute top-0 right-0 p-6 opacity-[0.03] hidden md:block">
-                    <Cpu className="w-32 h-32 text-[#0071E3]" />
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-blue-50 text-[#0071E3] rounded-xl md:rounded-2xl flex items-center justify-center font-black">
-                      {result.complexity}/10
-                    </div>
-                    <div>
-                      <h4 className="text-[10px] font-black text-black/30 uppercase tracking-widest">Assessment Detail</h4>
-                      <h3 className="text-xl md:text-2xl font-bold text-[#1D1D1F] tracking-tight">{result.fault}</h3>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 md:gap-6">
-                    <div className="p-4 md:p-5 bg-[#F5F5F7] rounded-[20px] md:rounded-[24px]">
-                      <p className="text-[10px] font-bold text-black/30 uppercase tracking-widest mb-1 md:mb-2">Wait Time</p>
-                      <p className="text-base md:text-lg font-bold text-[#1D1D1F]">{result.time}</p>
-                    </div>
-                    <div className="p-4 md:p-5 bg-blue-50 rounded-[20px] md:rounded-[24px]">
-                      <p className="text-[10px] font-bold text-[#0071E3] uppercase tracking-widest mb-1 md:mb-2">Estimate</p>
-                      <p className="text-base md:text-lg font-bold text-[#0071E3]">{result.cost}</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 md:p-6 border border-black/5 rounded-[20px] md:rounded-[24px] space-y-2 md:space-y-3 font-medium">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-black/30 uppercase tracking-widest">
-                      <ShieldCheck className="w-3 h-3" /> Expert Advice
-                    </div>
-                    <p className="text-sm text-black/60 leading-relaxed italic">
-                      "{result.advice}"
-                    </p>
-                  </div>
-
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                       const contactSection = document.getElementById('contact');
-                       contactSection?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="w-full bg-[#0071E3] text-white font-bold py-4 md:py-5 rounded-2xl shadow-lg shadow-blue-200/50 flex items-center justify-center gap-3 text-sm md:text-base"
-                  >
-                    Confirm Repair Booking <ArrowRight className="w-4 h-4" />
-                  </motion.button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="apple-card p-8 md:p-12 bg-[#F5F5F7] border border-dashed border-black/10 flex flex-col items-center justify-center text-center space-y-6 min-h-[300px] md:h-[500px]"
-                >
-                  <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-2xl md:rounded-3xl flex items-center justify-center apple-shadow">
-                    <MessageSquareText className="w-8 h-8 md:w-10 md:h-10 text-black/10" />
-                  </div>
-                  <div className="max-w-xs">
-                    <h3 className="text-base md:text-lg font-bold text-[#1D1D1F] mb-3 tracking-tight">Awaiting Fault Input</h3>
-                    <p className="text-black/40 text-[13px] md:text-sm font-medium leading-relaxed">
-                      Enter your device symptoms to the left to begin the neural analysis sequence.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-black/5" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-black/5" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-black/5" />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const AnatomyOfQuality = () => {
   const parts = [
@@ -341,7 +105,6 @@ const Navbar = ({ onFavoritesClick }: { onFavoritesClick: () => void }) => {
   const navLinks = [
     { name: 'Home', to: 'home', icon: <RefreshCw className="w-5 h-5" /> },
     { name: 'Process', to: 'how-it-works', icon: <HelpCircle className="w-5 h-5" /> },
-    { name: 'AI Lab', to: 'ai-lab', icon: <Cpu className="w-5 h-5" /> },
     { name: 'Pricing', to: 'pricing', icon: <Tag className="w-5 h-5" /> },
     { name: 'Services', to: 'services', icon: <Briefcase className="w-5 h-5" /> },
     { name: 'FAQ', to: 'faq', icon: <MessageSquareText className="w-5 h-5" /> },
@@ -412,7 +175,7 @@ const Navbar = ({ onFavoritesClick }: { onFavoritesClick: () => void }) => {
             ))}
             
             <a
-              href="https://ais-pre-naqpmvhf3ms2lg46nbuwbw-644472806116.europe-west2.run.app"
+              href="https://revive-it.link"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-4 p-3.5 rounded-2xl text-black/40 hover:bg-[#F5F5F7] transition-all font-bold text-sm tracking-tight group"
@@ -448,11 +211,25 @@ const Navbar = ({ onFavoritesClick }: { onFavoritesClick: () => void }) => {
               "p-5 bg-[#1D1D1F] rounded-[24px] text-white relative overflow-hidden transition-all",
               !isExpanded && "lg:block hidden"
             )}>
-              <p className="text-[8px] font-black opacity-30 uppercase tracking-[0.2em] mb-1">Support</p>
-              <p className="text-sm font-bold truncate">07763 817558</p>
-              <Link to="contact" smooth={true} className="mt-4 w-full py-3 bg-[#0071E3] rounded-xl flex items-center justify-center text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all cursor-pointer">
-                Book
-              </Link>
+              <div className="absolute inset-0 opacity-20 pointer-events-none">
+                <iframe 
+                  src="https://cybermap.kaspersky.com/en/widget/" 
+                  className="w-full h-full scale-[2] origin-center opacity-30 grayscale contrast-125"
+                  frameBorder="0"
+                  scrolling="no"
+                  style={{ pointerEvents: 'none' }}
+                />
+              </div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <p className="text-[8px] font-black opacity-50 uppercase tracking-[0.2em]">Global Threat Level: High</p>
+                </div>
+                <p className="text-sm font-bold truncate">07763 817558</p>
+                <Link to="contact" smooth={true} className="mt-4 w-full py-3 bg-[#0071E3] rounded-xl flex items-center justify-center text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all cursor-pointer">
+                  Initiate Repair
+                </Link>
+              </div>
             </div>
             
             {!isExpanded && (
@@ -542,6 +319,20 @@ const Hero = () => {
               </div>
             </div>
           </div>
+
+          {/* Tech Data Stream */}
+          <div className="mt-12 p-6 bg-black/[0.02] border border-black/5 rounded-3xl hidden md:block group">
+            <div className="flex items-center gap-3 mb-4">
+              <RefreshCw className="w-4 h-4 text-[#0071E3] animate-spin" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1D1D1F]">System Link: Active</span>
+            </div>
+            <div className="font-mono text-[10px] text-black/40 space-y-1 leading-none">
+              <p className="flex justify-between"><span>CPU_TEMP:</span> <span className="text-blue-500">34.2°C</span></p>
+              <p className="flex justify-between"><span>DDoS_MITIGATION:</span> <span className="text-green-500">READY</span></p>
+              <p className="flex justify-between"><span>LAB_STATUS:</span> <span className="animate-pulse">SYNCHRONIZING...</span></p>
+              <p className="flex justify-between"><span>THREAT_INTEL:</span> <span>RECURSIVE_SCAN</span></p>
+            </div>
+          </div>
         </motion.div>
  
         <motion.div
@@ -552,14 +343,34 @@ const Hero = () => {
            viewport={{ once: true }}
            className="relative mt-8 md:mt-0"
         >
-          <div className="relative z-10 apple-card group">
-            <div className="aspect-[4/5] overflow-hidden bg-slate-50">
-              <img 
-                src="https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?q=80&w=2070&auto=format&fit=crop" 
-                alt="Professional Tech Repair" 
-                className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-1000"
-              />
-            </div>
+          <div className="relative z-10 apple-card group overflow-hidden">
+             <div className="absolute inset-0 opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity z-10">
+                <iframe 
+                  src="https://cybermap.kaspersky.com/en/widget/" 
+                  className="w-full h-full scale-[4] origin-top opacity-50 grayscale invert brightness-50"
+                  frameBorder="0"
+                  scrolling="no"
+                  style={{ pointerEvents: 'none' }}
+                />
+             </div>
+             <div className="aspect-[4/5] overflow-hidden bg-slate-50 relative">
+               <img 
+                 src="https://images.unsplash.com/photo-1597740985671-2a8a3b80502e?q=80&w=2070&auto=format&fit=crop" 
+                 alt="Professional Tech Repair" 
+                 className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-1000 mix-blend-overlay opacity-80"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-[#1D1D1F]/80 via-transparent to-transparent z-10" />
+               
+               {/* Tech Overlay HUD */}
+               <div className="absolute inset-0 p-8 flex flex-col justify-end text-white z-20">
+                  <div className="flex items-center gap-3 mb-2">
+                     <div className="px-2 py-1 bg-[#0071E3] rounded-md text-[8px] font-black uppercase tracking-widest whitespace-nowrap">Global Threat Map</div>
+                     <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-tight">Active Surveillance</h3>
+                  <p className="text-[11px] font-medium opacity-60 leading-relaxed max-w-[200px] mt-2">Monitoring global hardware vulnerabilities in real-time through the Kaspersky Intelligence network.</p>
+               </div>
+             </div>
           </div>
           
           {/* Floating UI Element */}
@@ -844,7 +655,7 @@ const TrackingInfo = () => {
 
             <div className="mt-12 md:mt-16">
               <a 
-                href="https://ais-pre-naqpmvhf3ms2lg46nbuwbw-644472806116.europe-west2.run.app" 
+                href="https://revive-it.link" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-full sm:w-auto gap-2 bg-[#1D1D1F] text-white font-bold px-8 py-4 rounded-full hover:bg-[#0071E3] transition-all apple-shadow uppercase tracking-widest text-[10px] md:text-[11px]"
@@ -960,7 +771,7 @@ const Contact = ({ setShowConfirmation }: { setShowConfirmation: (val: boolean) 
   const getEmailLink = (data = formData) => {
     const subject = `[Website ${data.type.charAt(0).toUpperCase() + data.type.slice(1)}] ${data.firstName} ${data.lastName}`;
     const body = `Customer: ${data.firstName} ${data.lastName}\nEmail: ${data.email}\n${data.bookingDate ? `Requested Date: ${data.bookingDate} @ ${data.bookingTime}\n` : ''}\nMessage:\n${data.description}\n\nSent from Revive-IT Online`;
-    return `mailto:info@revive-it.online?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    return `mailto:info@revive-it.link?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const getSMSLink = (data = formData) => {
@@ -993,13 +804,13 @@ const Contact = ({ setShowConfirmation }: { setShowConfirmation: (val: boolean) 
                   <p className="text-lg font-bold">07763 817 558</p>
                 </div>
               </a>
-              <a href="mailto:info@revive-it.online" className="flex items-center gap-5 group">
+              <a href="mailto:info@revive-it.link" className="flex items-center gap-5 group">
                 <div className="w-11 h-11 bg-[#F5F5F7] rounded-xl flex items-center justify-center group-hover:bg-[#0071E3] group-hover:text-white transition-all duration-500 text-black/40">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-[10px] text-black/30 font-bold uppercase tracking-widest">Email Support</p>
-                  <p className="text-lg font-bold">info@revive-it.online</p>
+                  <p className="text-lg font-bold">info@revive-it.link</p>
                 </div>
               </a>
               <a href="sms:447763817558" className="flex items-center gap-5 group">
@@ -1166,7 +977,6 @@ const Footer = () => {
           
           <div className="flex flex-wrap items-center gap-x-6 md:gap-x-10 gap-y-4 text-[10px] md:text-[11px] font-bold uppercase tracking-widest">
             <Link to="how-it-works" smooth={true} className="text-black/60 hover:text-[#0071E3] transition-colors cursor-pointer">Process</Link>
-            <Link to="ai-lab" smooth={true} className="text-[#0071E3] hover:opacity-80 transition-opacity cursor-pointer">AI Lab</Link>
             <Link to="pricing" smooth={true} className="text-black/60 hover:text-[#0071E3] transition-colors cursor-pointer">Pricing</Link>
             <Link to="faq" smooth={true} className="text-black/60 hover:text-[#0071E3] transition-colors cursor-pointer">FAQ</Link>
             <Link to="services" smooth={true} className="text-black/60 hover:text-[#0071E3] transition-colors cursor-pointer">Services</Link>
@@ -1553,7 +1363,6 @@ export default function App() {
             <main className="w-full">
               <Hero />
               <HowItWorks />
-              <AIDiagnostics />
               <AnatomyOfQuality />
               <PriceGuide />
               <Services />
